@@ -1,4 +1,3 @@
-
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktor_version: String by project
@@ -42,6 +41,7 @@ dependencies {
     implementation("com.github.papsign:Ktor-OpenAPI-Generator:0.2-beta.20")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.8") // needed for multipart parsing
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.8") // needed for Optional<> parsing
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.3")
     implementation("org.webjars:swagger-ui:3.25.0")
     implementation("org.reflections:reflections:0.9.11") // only used while initializing
 
@@ -64,6 +64,8 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.19.0")
     testImplementation("io.rest-assured:rest-assured:4.3.3")
     testImplementation("org.hamcrest:hamcrest:2.2")
+    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
 }
 
 tasks.withType<Jar> {
