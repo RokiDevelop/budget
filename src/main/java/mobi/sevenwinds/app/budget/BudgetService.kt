@@ -2,7 +2,12 @@ package mobi.sevenwinds.app.budget
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mobi.sevenwinds.app.authors.AuthorEntity
+import mobi.sevenwinds.app.authors.AuthorTable
+import mobi.sevenwinds.modules.exception.BadRequestException
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object BudgetService {
@@ -13,7 +18,12 @@ object BudgetService {
                 this.month = body.month
                 this.amount = body.amount
                 this.type = body.type
+                body.authorId?.let { authorId ->
+                    author = AuthorEntity.findById(authorId) ?: throw BadRequestException("Author with id=$authorId not found")
+                }
             }
+
+            entity.refresh(true)
 
             return@transaction entity.toResponse()
         }
@@ -21,8 +31,24 @@ object BudgetService {
 
     suspend fun getYearStats(param: BudgetYearParam): BudgetYearStatsResponse = withContext(Dispatchers.IO) {
         transaction {
-            val query = BudgetTable
-                .select { BudgetTable.year eq param.year }
+            val baseCondition = BudgetTable.year.eq(param.year)
+
+            val authorCondition = param.author
+                ?.takeIf { it.isNotBlank() }
+                ?.let { AuthorTable.fullName.lowerCase().like("%${it.toLowerCase()}%") }
+                ?: Op.TRUE
+
+            val joined = BudgetTable.leftJoin(
+                otherTable = AuthorTable,
+                onColumn = { BudgetTable.author },
+                otherColumn = { AuthorTable.id }
+            )
+
+            val query = joined
+                .slice(BudgetTable.columns)
+                .select {
+                    baseCondition and authorCondition
+                }
                 .orderBy(
                     BudgetTable.month to SortOrder.ASC,
                     BudgetTable.amount to SortOrder.DESC
@@ -38,7 +64,7 @@ object BudgetService {
 
             val total = aggRows.sumOf { row -> row[BudgetTable.year.count()] }
 
-            val data = BudgetEntity.wrapRows(query).map { it.toResponse() }
+            val data = BudgetEntity.wrapRows(query).map { it.toResponseDto() }
 
             val sumByType = aggRows.associate { row ->
                 val type = row[BudgetTable.type].toString()

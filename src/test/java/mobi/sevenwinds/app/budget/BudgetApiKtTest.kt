@@ -1,6 +1,9 @@
 package mobi.sevenwinds.app.budget
 
 import io.restassured.RestAssured
+import mobi.sevenwinds.app.authors.AuthorCreateRequestDto
+import mobi.sevenwinds.app.authors.AuthorRecord
+import mobi.sevenwinds.app.authors.AuthorTable
 import mobi.sevenwinds.common.ServerTest
 import mobi.sevenwinds.common.jsonBody
 import mobi.sevenwinds.common.toResponse
@@ -15,6 +18,43 @@ class BudgetApiKtTest : ServerTest() {
     @BeforeEach
     internal fun setUp() {
         transaction { BudgetTable.deleteAll() }
+        transaction { AuthorTable.deleteAll() }
+    }
+
+    @Test
+    fun testFilterByAuthorName() {
+        val authorName1 = "Petrov Petya Petrovich"
+        val authorName2 = "Sidorov Sidor Sidorovich"
+        val authorName3 = "Stepanov Petya Stepanovich"
+
+        val author1 = addAuthorRecord(authorName1)
+        val author2 = addAuthorRecord(authorName2)
+        val author3 = addAuthorRecord(authorName3)
+
+        addRecord(BudgetRecord(2024, 9, 300, BudgetType.Приход, author3.id))
+        addRecord(BudgetRecord(2024, 6, 150, BudgetType.Расход, author1.id))
+        addRecord(BudgetRecord(2024, 5, 100, BudgetType.Приход, author1.id))
+        addRecord(BudgetRecord(2024, 8, 250, BudgetType.Приход, author2.id))
+        addRecord(BudgetRecord(2024, 10, 350, BudgetType.Расход, null))
+        addRecord(BudgetRecord(2024, 7, 200, BudgetType.Приход, author2.id))
+
+        val response = RestAssured.given()
+            .queryParam("limit", 10)
+            .queryParam("offset", 0)
+            .queryParam("author", "Petya")
+            .get("/budget/year/2024/stats")
+            .toResponse<BudgetYearStatsResponse>()
+
+        Assert.assertEquals(3, response.items.size)
+
+        val fullNames = response.items.mapNotNull { it.author?.fullName }.toSet()
+
+        Assert.assertTrue(fullNames.contains(authorName1))
+        Assert.assertTrue(fullNames.contains(authorName3))
+
+        val months = response.items.map { it.month }
+
+        Assert.assertTrue(months == months.sorted())
     }
 
     @Test
@@ -82,5 +122,12 @@ class BudgetApiKtTest : ServerTest() {
             .toResponse<BudgetRecord>().let { response ->
                 Assert.assertEquals(record, response)
             }
+    }
+
+    private fun addAuthorRecord(fullName: String): AuthorRecord {
+        return RestAssured.given()
+            .jsonBody(AuthorCreateRequestDto(fullName))
+            .post("/authors/add")
+            .toResponse()
     }
 }
