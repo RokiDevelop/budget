@@ -12,15 +12,15 @@ import com.papsign.ktor.openapigen.route.response.respond
 import com.papsign.ktor.openapigen.route.route
 import mobi.sevenwinds.app.authors.AuthorResponseDto
 
-fun NormalOpenAPIRoute.budget() {
+fun NormalOpenAPIRoute.budget(budgetService: BudgetService) {
     route("/budget") {
         route("/add").post<Unit, BudgetRecord, BudgetRecord>(info("Добавить запись")) { param, body ->
-            respond(BudgetService.addRecord(body))
+            respond(budgetService.addRecord(body))
         }
 
         route("/year/{year}/stats") {
             get<BudgetYearParam, BudgetYearStatsResponse>(info("Получить статистику за год")) { param ->
-                respond(BudgetService.getYearStats(param))
+                respond(budgetService.getYearStats(param))
             }
         }
     }

@@ -9,10 +9,10 @@ import com.papsign.ktor.openapigen.route.route
 import org.joda.time.DateTime
 
 
-fun NormalOpenAPIRoute.authors() {
+fun NormalOpenAPIRoute.authors(authorService: AuthorService) {
     route("/authors") {
-        route("/add").post<Unit, AuthorRecord, AuthorCreateRequestDto>(info("Добавить автора")) { param, body ->
-            respond(AuthorService.addRecord(body))
+        route("/add").post<Unit, AuthorRecord, AuthorCreateRequestDto>(info("Добавить автора")) { _, body ->
+            respond(authorService.addRecord(body))
         }
     }
 }

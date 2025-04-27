@@ -6,12 +6,14 @@ import com.papsign.ktor.openapigen.route.tag
 import io.ktor.application.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import mobi.sevenwinds.app.authors.AuthorService
 import mobi.sevenwinds.app.authors.authors
+import mobi.sevenwinds.app.budget.BudgetService
 import mobi.sevenwinds.app.budget.budget
 
-fun NormalOpenAPIRoute.swaggerRouting() {
-    tag(SwaggerTag.Бюджет) { budget() }
-    tag(SwaggerTag.Авторы) { authors() }
+fun NormalOpenAPIRoute.swaggerRouting(authorService: AuthorService, budgetService: BudgetService) {
+    tag(SwaggerTag.Бюджет) { budget(budgetService) }
+    tag(SwaggerTag.Авторы) { authors(authorService) }
 }
 
 fun Routing.serviceRouting() {
