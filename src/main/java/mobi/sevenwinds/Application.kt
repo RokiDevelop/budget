@@ -14,6 +14,12 @@ import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.server.netty.*
 import mobi.sevenwinds.app.Config
+import mobi.sevenwinds.app.authors.AuthorRepository
+import mobi.sevenwinds.app.authors.AuthorRepositoryImpl
+import mobi.sevenwinds.app.authors.AuthorService
+import mobi.sevenwinds.app.budget.BudgetRepository
+import mobi.sevenwinds.app.budget.BudgetRepositoryImpl
+import mobi.sevenwinds.app.budget.BudgetService
 import mobi.sevenwinds.modules.DatabaseFactory
 import mobi.sevenwinds.modules.exception.configureErrorHandling
 import mobi.sevenwinds.modules.initSwagger
@@ -28,6 +34,11 @@ fun Application.module() {
     DatabaseFactory.init(environment.config)
 
     initSwagger()
+
+    val authorRepository: AuthorRepository = AuthorRepositoryImpl()
+    val budgetRepository: BudgetRepository = BudgetRepositoryImpl()
+    val authorService = AuthorService(authorRepository)
+    val budgetService = BudgetService(budgetRepository, authorRepository)
 
     install(DefaultHeaders)
 
@@ -68,7 +79,7 @@ fun Application.module() {
     }
 
     apiRouting {
-        swaggerRouting()
+        swaggerRouting(authorService, budgetService)
     }
 
     routing {
